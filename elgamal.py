@@ -3,6 +3,7 @@
 import random
 import math
 import collections
+import string
 
 Point = collections.namedtuple("Point", ["x", "y"])
 
@@ -146,9 +147,9 @@ def generateGenerators():
 
     return couples
 
-a = 1
-b = 18
-q = 19
+a = 4
+b = 1
+q = 503
 m = 22
 
 
@@ -173,6 +174,9 @@ print("Message déchiffré :", decoded)
 
 # Choix du meilleur générateur/ordre
 
+ordre = 2 * q
+nb_car = len(string.ascii_lowercase + "0123456789")
+
 C = []
 for x in range(1, q - 1):
     for y in range(1, q - 1):
@@ -180,8 +184,23 @@ for x in range(1, q - 1):
             C.append(Point(x, y))
 
 
-print(C)
-print(len(C))
+points=[]
+r = C[0]
+for i in range(len(C)):
+    c = C[i]
+    r = eccAdd(r, c)
+    while c.x != r.x:
+        r = eccAdd(r, c)
+        points.append(Point(r.x, r.y))
 
+    _ordre = len(points)
+    if _ordre > nb_car and _ordre < ordre:
+        ordre = _ordre
+        print(i)
+        G = points[i]
+
+
+print("Meilleur ordre : ", ordre)
+print(G)
 """ G, _ = pointAt(7)
 print(order(G)) """
