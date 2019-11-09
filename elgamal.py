@@ -21,7 +21,6 @@ def inv(n, q):
 def sqrt(n, q):
     assert n < q
     for i in range(1, q):
-        #print(str(i) + " * " + str(i) + " % " + str(q) + " == " + str(n))
         if i * i % q == n:
             return (i, q - i)
         pass
@@ -72,12 +71,10 @@ def eccAdd(G1, G2):
     
     # cas où x1 = x2 et y1 = -y2
     if x1 == x2 and (y1 != y2 or y1 == 0):
-        # p1 + -p1 == 0
         return Point(0, 0)
     
     # cas où x1 = x2 et y1 = y2
     if x1 == x2:
-        # p1 + p1: use tangent line of p1 as (p1,p1) line
         l = (3 * x1 * x1 + a) * inv(2 * y1, q) % q
         pass
     
@@ -105,6 +102,15 @@ def encrypt(G, plain, Kpub):
 
     return (y1, y2)
 
+def asciiEncrypt(m):
+    rand = 7
+
+    idx = couples.index(m) + ((rand - 1) * (Kpriv - 1))
+    y1 = couples[(rand - 1) % ordre]
+    y2 = couples[idx % ordre]
+
+    return (y1, y2)
+    
 
 def decrypt(cipher, Kpriv):
     y1, y2 = cipher
@@ -114,6 +120,12 @@ def decrypt(cipher, Kpriv):
     y1 = Point(y1.x, -y1.y % q)
 
     return eccAdd(y2, y1)
+
+def asciiDecrypt(y1, y2):
+    idx = (couples.index(y2) - (Kpriv - 1) * couples.index(y1)) % ordre
+    return couples[idx]
+
+
 
 
 def generateKeypairs(G):
@@ -175,7 +187,9 @@ print("Message déchiffré :", decoded)
 # Choix du meilleur générateur/ordre
 
 ordre = 2 * q
+cars = string.ascii_lowercase + "0123456789"
 nb_car = len(string.ascii_lowercase + "0123456789")
+message = "hello"
 
 C = []
 for x in range(1, q - 1):
@@ -185,22 +199,69 @@ for x in range(1, q - 1):
 
 
 points=[]
-r = C[0]
+r = Point(0,0)
+
+print("Choix du meilleur générateur/ordre...")
+
 for i in range(len(C)):
     c = C[i]
-    r = eccAdd(r, c)
-    while c.x != r.x:
-        r = eccAdd(r, c)
-        points.append(Point(r.x, r.y))
+    r = eccAdd(c, c)
+
+    points.append(c)
+
+    while True:
+        points.append(r)
+        if (r.x == c.x):
+            break
+        else:
+            r = eccAdd(r, c)
+
 
     _ordre = len(points)
     if _ordre > nb_car and _ordre < ordre:
         ordre = _ordre
-        print(i)
         G = points[i]
+
+    points = []
 
 
 print("Meilleur ordre : ", ordre)
-print(G)
-""" G, _ = pointAt(7)
-print(order(G)) """
+
+print("ASCII à chiffrer : ", message)
+
+couples = []
+couples.append(G)
+
+r = eccAdd(G, G)
+
+while True:
+    couples.append(r)
+    if (r.x == G.x):
+        break
+    else:
+        r = eccAdd(r, G)
+
+
+
+# Chiffrement
+asciiCipher = []
+for m in message:
+    c = couples[cars.index(m)]
+    asciiCipher.append(asciiEncrypt(c))
+
+print("ASCII chiffré : ", asciiCipher)
+
+# Déchiffrement
+
+asciiPlain = ""
+for m in asciiCipher:
+    idx = couples.index(asciiDecrypt(m[0], m[1]))
+    asciiPlain += cars[idx]
+
+print("ASCII déchiffré : ", asciiPlain)
+
+
+
+
+
+
